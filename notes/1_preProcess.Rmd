@@ -1,0 +1,12 @@
+---
+title: "Pre procesado de los datos"
+author: "Udemy - Machine learning de la A a la Z con Juan Gabriel Gomila"
+date: "09/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 

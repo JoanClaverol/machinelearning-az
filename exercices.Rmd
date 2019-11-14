@@ -1,0 +1,279 @@
+---
+title: "Notes"
+author: "Joan Claverol Romero"
+date: "30/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F)
+```
+
+## Machine learning
+
+```{r}
+library(tidyverse)
+library(magrittr)
+```
+
+Load data:
+
+```{r}
+dataset <- read_csv("datasets/Part 2 - Regression/Section 5 - Multiple Linear Regression/50_Startups.csv")
+# add dummies
+library(fastDummies)
+dataset %<>% 
+  fastDummies::dummy_cols("State", remove_first_dummy = T)
+# Mahine learning process
+library(caret)
+set.seed(123)
+train_id <- createDataPartition(y = dataset$Profit, p = 0.8, list = F)
+train <- dataset[train_id,]
+test <- dataset[train_id,]
+```
+
+Time to create the model:
+
+```{r}
+mod <- lm(Profit ~., data = train %>% select(-State))
+summary(mod)
+```
+
+Podemos contruir un modelo para que seleccione las variables:
+
+* Eliminación hacia atrás automàtica:
+
+```{r}
+# especificamos un p valor
+backwardElimination <- function(x, sl) {
+  numVars = length(x)
+  for (i in c(1:numVars)){
+    regressor = lm(formula = Profit ~ ., data = x)
+    maxVar = max(coef(summary(regressor))[c(2:numVars), "Pr(>|t|)"])
+    if (maxVar > sl){
+      j = which(coef(summary(regressor))[c(2:numVars), "Pr(>|t|)"] == maxVar)
+      x = x[, -j]
+    }
+    numVars = numVars - 1
+  }
+  return(summary(regressor))
+}
+```
+
+Applying the function:
+
+```{r}
+SL = 0.05
+dataset = dataset[, c(1,2,3,4,5)]
+backwardElimination(dataset, SL)
+
+```
+
+
+## Regresión polinómica
+
+Cargamos los datos:
+
+```{r}
+dataset <- read_csv("datasets/Part 2 - Regression/Section 6 - Polynomial Regression/Position_Salaries.csv")
+ggplot(dataset, aes(x = Level, y = Salary)) +
+  geom_point() +
+  geom_smooth(se = F)
+```
+
+Partimos los datos:
+
+```{r}
+# Mahine learning process
+library(caret)
+set.seed(123)
+train_id <- createDataPartition(y = dataset$Salary, p = 0.8, list = F)
+train <- dataset[train_id,]
+test <- dataset[train_id,]
+```
+
+Creamos el primer modelo:
+
+```{r}
+mod <- lm(Salary ~ Level, dataset)
+summary(mod)
+```
+
+Visualizemos los resultados:
+
+```{r}
+library(modelr)
+dataset %>% 
+  add_predictions(model = mod) %>% 
+  ggplot(aes(x = Level)) +
+    geom_point(aes(y = Salary)) +
+    geom_line(aes(y = pred), color = "red")
+```
+
+
+Vamos a ajustar con un model de regresion polinomica:
+
+```{r}
+# anadimos nuevas variables
+df <- dataset %>% 
+  mutate(
+    level2 = Level^2,
+    level3 = Level^3,
+    level4 = Level^4,
+    # level5 = Level^5
+    )
+mod_poly <- lm(Salary ~ ., df %>% select(-Position))
+summary(mod_poly)
+```
+
+```{r}
+df %>% 
+  add_predictions(model = mod_poly) %>% 
+  ggplot(aes(x = Level)) +
+    geom_point(aes(y = Salary)) +
+    geom_line(aes(y = pred), color = "red")
+```
+
+## Support Vector Machine
+
+```{r}
+dataset <- read_csv("datasets/Part 2 - Regression/Section 7 - Support Vector Regression (SVR)/Position_Salaries.csv")
+```
+
+Anadimos nuevas variables
+
+```{r}
+mod_svm <- e1071::svm(Salary ~ ., 
+                      dataset %>% select(-Position), 
+                      type = "eps-regression", 
+                      kernel = "radial")
+summary(mod_svm)
+```
+
+```{r}
+df %>% 
+  add_predictions(model = mod_svm) %>% 
+  ggplot(aes(x = Level)) +
+    geom_point(aes(y = Salary)) +
+    geom_line(aes(y = pred), color = "red")
+```
+
+## Arboles de regresion
+
+Arboles de classificacion y de regression. 
+
+Nos centraremos en los arboles de regresion. 
+El algoritmo mira la entropia, como de juntos o de dispersos pueden estar esos puntos. Intenta agrupar en cierto punto una serie de puntos. Buscamos explicar al maximo de puntos con cada particion. 
+Como funciona?
+
+```{r}
+dataset <- read_csv("datasets/Part 2 - Regression/Section 8 - Decision Tree Regression/Position_Salaries.csv")
+```
+
+Vamos a usar el paquete rpart:
+
+
+```{r}
+mod_rpart <- rpart::rpart(Salary ~ ., 
+                          dataset %>% select(-Position),
+                          control = rpart::rpart.control(
+                            minsplit = 1 # numero de splits dentro del arbol
+                            )
+                          )
+summary(mod_rpart)
+```
+
+```{r}
+df %>% 
+  add_predictions(model = mod_rpart) %>% 
+  ggplot(aes(x = Level)) +
+    geom_point(aes(y = Salary)) +
+    geom_line(aes(y = pred), color = "red")
+```
+
+## Bosques aleatorios
+
+Es un algoritmo de aprendizaje conjunto. 
+
+1. Primero elgiriremos un conjunto aleatorio K de puntos de datos del conjunto de entrenamiento. 
+2. Contruir un arbol de decision asociado a esos K puntos de datos. 
+3. Elegir el ntree de arboles que queremos construir y repetimos los pasos 1 y 2. 
+4. Para un nuevo punto de datos, hacer que cada uno de los ntree arboles hafa una prediccion del valor de Y para el punto en cuestion, y asigne al nuevo punto la prediccion final basada en el promedio de ttodas las predicciones Y de los arboles. 
+
+```{r}
+dataset <- read_csv("datasets/Part 2 - Regression/Section 8 - Decision Tree Regression/Position_Salaries.csv")
+```
+
+Vamos a usar el paquete rpart:
+
+
+```{r}
+mod_rf <- randomForest::randomForest(Salary ~ ., 
+                          dataset %>% select(-Position), 
+                          ntree = 100
+                          )
+mod_rf
+```
+
+```{r}
+df %>% 
+  add_predictions(model = mod_rf) %>% 
+  ggplot(aes(x = Level)) +
+    geom_point(aes(y = Salary)) +
+    geom_line(aes(y = pred), color = "red")
+```
+
+# Clasificacion
+
+## Regresion logistica
+
+```{r}
+dataset <- read_csv("datasets/Part 3 - Classification/Section 14 - Logistic Regression/Social_Network_Ads.csv")
+```
+
+Hacemos la particion:
+
+```{r}
+set.seed(123)
+train_id <- createDataPartition(y = dataset$Purchased, p = 0.75, list = F)
+train <- dataset[train_id,]
+test <- dataset[train_id,]
+```
+
+Creamos el modelo
+
+```{r}
+classifier <- glm(Purchased ~., 
+                  data = train,
+                  family = binomial)
+summary(classifier)
+```
+
+Now we can do the predicions
+
+```{r}
+test <- test %>% 
+  add_predictions(model = classifier, type = "response") %>% 
+  mutate(purchased_pred = if_else(pred > 0.5, 1, 0),
+         resid = abs(Purchased - purchased_pred))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(test$purchased_pred), 
+                reference = factor(test$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+test %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred, col = factor(resid)), 
+               shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Prob") +
+    theme_minimal()
+```
+
