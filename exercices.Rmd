@@ -229,6 +229,9 @@ df %>%
 
 ```{r}
 dataset <- read_csv("datasets/Part 3 - Classification/Section 14 - Logistic Regression/Social_Network_Ads.csv")
+library(magrittr)
+dataset %<>%
+  select(Purchased, EstimatedSalary, Age)
 ```
 
 Hacemos la particion:
@@ -252,7 +255,7 @@ summary(classifier)
 Now we can do the predicions
 
 ```{r}
-test <- test %>% 
+data_pred <- test %>% 
   add_predictions(model = classifier, type = "response") %>% 
   mutate(purchased_pred = if_else(pred > 0.5, 1, 0),
          resid = abs(Purchased - purchased_pred))
@@ -261,14 +264,14 @@ test <- test %>%
 And check the confusion matrix
 
 ```{r}
-confusionMatrix(data = factor(test$purchased_pred), 
-                reference = factor(test$Purchased))
+confusionMatrix(data = factor(data_pred$purchased_pred), 
+                reference = factor(data_pred$Purchased))
 ```
 
 Let's do the visualizations of the training set
 
 ```{r}
-test %>% 
+data_pred %>% 
   ggplot(aes(x = Age, y = EstimatedSalary)) +
     geom_point(aes(fill = pred, col = factor(resid)), 
                shape = 21, size = 3, stroke = 1) +
@@ -276,4 +279,337 @@ test %>%
     labs(color = "Errors", fill = "Prob") +
     theme_minimal()
 ```
+
+## KNN
+
+1. Primero elegimos el numero de vecinos para la categoria, normalmente usamos un valor impar.
+2. Luego tomamos los K vecinos a traves de la distancia euclidea (puede ser la distancia Manhattan, o otras). 
+3. Contamos el numero de puntos que pertenecen a cada categoria
+4. Asiganmos el nuevo dato a la categoria con mas vecinos en ella
+
+Creamos el modelo con los anteriores datos:
+
+```{r}
+classifier <- caret::train(factor(Purchased) ~.,
+                           data = train, 
+                           method = "kknn",
+                           preProcess = c("center","scale"))
+classifier
+```
+
+Now we can do the predicions
+
+```{r}
+data_pred <- test %>% 
+  add_predictions(model = classifier, type = "raw") %>% 
+  mutate(resid = abs(Purchased - if_else(as.integer(pred) == 1, 0, 1)))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(data_pred$pred), 
+                reference = factor(data_pred$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+data_pred %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred, col = factor(resid)), 
+               shape = 21, size = 3, alpha = 0.5) +
+      geom_point(aes(col = factor(resid)), shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Class") +
+    theme_minimal()
+```
+
+## SVM
+
+Support Vector Machine pasa por el concepto del margen maximo. La distancia maxima que tiene ara equivocarse. Buscan los puntos de clases distintas que sean equidistantes. Estod dos puntos sob los que llamamos los punots de soporte. 
+
+```{r}
+# caret 
+classifier <- caret::train(factor(Purchased) ~.,
+                           data = train, 
+                           method = "svmRadial",
+                           preProcess = c("center","scale"))
+
+classifier
+```
+
+Now we can do the predicions
+
+```{r}
+data_pred <- test %>% 
+  add_predictions(model = classifier, type = "raw") %>% 
+  mutate(resid = abs(Purchased - if_else(as.integer(pred) == 1, 0, 1)))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(data_pred$pred), 
+                reference = factor(data_pred$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+data_pred %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred, col = factor(resid)), 
+               shape = 21, size = 3, alpha = 0.5) +
+      geom_point(aes(col = factor(resid)), shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Class") +
+    theme_minimal()
+```
+
+## Naive bayes
+
+usamos la libreria naive bayes y predecimos solo con el estimated salay
+
+```{r}
+# e1071
+classifier <- e1071::naiveBayes(factor(Purchased) ~.,
+                                data = train)
+# caret 
+# classifier <- caret::train(factor(Purchased) ~.,
+#                            data = train, 
+#                            method = "nb",
+#                            preProcess = c("scale"))
+
+classifier
+```
+
+```{r}
+data_pred <- test %>% 
+  add_predictions(model = classifier, type = "class") %>% 
+  mutate(resid = abs(Purchased - if_else(as.integer(pred) == 1, 0, 1)))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(data_pred$pred), 
+                reference = factor(data_pred$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+data_pred %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred), shape = 21, size = 3, alpha = 0.5) +
+    geom_point(aes(col = factor(resid)), shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Class") +
+    theme_minimal()
+```
+
+## Arboles de decision
+
+CART (classification and regression tree)
+
+```{r}
+# e1071
+classifier <- rpart::rpart(factor(Purchased) ~.,
+                                data = train)
+# caret 
+classifier <- caret::train(factor(Purchased) ~.,
+                           data = train,
+                           method = "rpart",
+                           preProcess = c("center"))
+
+classifier
+```
+
+```{r}
+data_pred <- test %>% 
+  add_predictions(model = classifier, type = "raw") %>% 
+  mutate(resid = abs(Purchased - if_else(as.integer(pred) == 1, 0, 1)))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(data_pred$pred), 
+                reference = factor(data_pred$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+data_pred %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred), shape = 21, size = 3, alpha = 0.5) +
+    geom_point(aes(col = factor(resid)), shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Class") +
+    theme_minimal()
+```
+
+## Random forest 
+
+1. Se seleccionar un numero aleatorio K de puntyos del conjunto de entrenamiento. 
+2. Construir el arbol de decision asociado a esos puntos de datos
+3. Elegir el numero de Ntree de arboles que queremos construir y repetir los pasos 1 y 2
+4. Para classificar un nuevo punto, hacer que cada uno de los ntree arboles elabore la preduccion de a que categoria pertenece y asignar el nuevo punto a la categoria con mas votos. 
+
+```{r}
+# e1071
+classifier <- randomForest::randomForest(factor(Purchased) ~.,
+                                         data = train)
+# caret 
+classifier <- caret::train(factor(Purchased) ~.,
+                           data = train,
+                           method = "rf",
+                           preProcess = c("center"))
+
+classifier
+```
+
+```{r}
+data_pred <- test %>% 
+  add_predictions(model = classifier, type = "raw") %>% 
+  mutate(resid = abs(Purchased - if_else(as.integer(pred) == 1, 0, 1)))
+```
+
+And check the confusion matrix
+
+```{r}
+confusionMatrix(data = factor(data_pred$pred), 
+                reference = factor(data_pred$Purchased))
+```
+
+Let's do the visualizations of the training set
+
+```{r}
+data_pred %>% 
+  ggplot(aes(x = Age, y = EstimatedSalary)) +
+    geom_point(aes(fill = pred), shape = 21, size = 3, alpha = 0.5) +
+    geom_point(aes(col = factor(resid)), shape = 21, size = 3, stroke = 1) +
+    scale_color_manual(values = c("white", "red")) + 
+    labs(color = "Errors", fill = "Class") +
+    theme_minimal()
+```
+
+## Metricas de evaulacion de modelos de clasificacion
+
+### Las curvas cap
+
+Estas curvas de perfil de precison acumulada o cap, nos permiten entender como evaluar nuestro modelo. 
+
+CAP = perfil de precision acumulado
+ROC = caractersiticas operativa del receptor
+
+# Clustering
+
+## K-Means
+
+En este caso tendremos un conjunto de puntos que queremos agrupar sin tener la variable por la que empezaremos. 
+
+Como funciona:
+
+1. elegir el numero K de clusters
+2. Seleccionar al azar K puntos, los baricentros (no necesariamente de nuestro dataset)
+3. Asignar cada punto al baricentro mas cercano -> esto formara los K clusters
+4. Calcular y asignar el nuevo baricentro de cada cluster
+5. Reasignar cada punto de los datos a su baricentro mas cercano. Si ha habido nuevas asignaciones, ir al PASO 4, si no ir FIN. 
+
+!Importante al elegir los baricentros iniciales. Usando el algoritmo de K-Means++ evitamos este problema. 
+
+Como seleccionar el numero de clusters; suma de los quedrados de los centros de los grupos. 
+
+
+```{r}
+dataset <- read_csv("datasets/Part 4 - Clustering/Section 24 - K-Means Clustering/Mall_Customers.csv")
+dataset <- dataset %>% 
+  select(Anual_Income = `Annual Income (k$)`, Spending_Score = `Spending Score (1-100)`)
+```
+
+Empezamos detectando el numero adecuado de k-means:
+
+```{r}
+set.seed(6)
+wcss <- vector()
+for (i in 1:10) {
+  wcss[i] <- sum(kmeans(x = dataset, centers = i)$withinss)
+}
+plot(x = 1:10, y = wcss, type = "b", main = "Metodo del codo", 
+     xlab = "Number of clusters (k)", ylab = "WCSS (k)")
+```
+
+AHora ya tenemos la informacion sabiendo que K debe ser 5:
+
+```{r}
+set.seed(29)
+# Aplicando el alogritmo con k - optimo
+kmeans <- kmeans(x = dataset, centers = 5, iter.max = 300, nstart = 10)
+kmeans
+```
+
+Vamos a visualizar los clusters:
+
+```{r}
+library(cluster)
+cluster::clusplot(x = dataset, clus = kmeans$cluster, lines = 0, shade = T, 
+                  color = T, label = 4,  plotchar = F, span = T, 
+                  main = "Clustering clients", xlab = "Ingresos anuales", 
+                  ylab = "Puntuacion (1-100)")
+```
+
+Como anadir los datos en el dataset:
+
+```{r}
+dataset$kmeans_clsuters <- kmeans$cluster
+dataset
+```
+
+## Clustering jerarquico
+
+Diferencia entre un clustering aglomerativo o divisitivo. 
+
+Para un paso aglomerativo: 
+
+1. Hace r que casa punto se un propio cluster -> asi tendremos N clusters
+2. Elegir lod dos puntos mas cercanos y juntarlos en un unico clister (n-1 clusters)
+3. Elego los dos **dos clusters mas cercanos** y juntarlos en un unico cluster (N - 2 clusters)
+4. Repetir el PASO 3 hasta solo tener 1 cluster
+
+Como funcionan los clustering jerarquicos
+
+Podemos usar la distancia vertical mas alta dentro de un cluster. 
+Localizar la distancia mas larga de las lineas verticales. Y cortad por la mitad. Pero no puede cortar ninguna linea horizontal. 
+
+
+```{r}
+dataset <- read_csv("datasets/Part 4 - Clustering/Section 25 - Hierarchical Clustering/Mall_Customers.csv")
+dataset <- dataset %>% 
+  select(Anual_Income = `Annual Income (k$)`, Spending_Score = `Spending Score (1-100)`)
+```
+
+Vamos a crear el dendograma 
+
+```{r}
+dendogram <- hclust(dist(x = dataset, method = "euclidean"), method = "ward.D")
+plot(dendogram)
+```
+
+Cantidad optima de clusters es 5, igual que el que obtuvimos en kmeans. 
+
+```{r}
+# dendograma optimizado
+hc <- hclust(dist(x = dataset, method = "euclidean"), method = "ward.D")
+# vamos a cortar el dendograma (un arbol)
+y_hc <- cutree(tree = hc, k = 5)
+clusplot(x = dataset, clus = y_hc, lines = 0, shade = T, 
+                  color = T, label = 4,  plotchar = F, span = T, 
+                  main = "Clustering clients", xlab = "Ingresos anuales", 
+                  ylab = "Puntuacion (1-100)")
+```
+
+Nos han salido el mismo cluster que con K-means. 
 
