@@ -110,3 +110,65 @@ hist(rbinom(n = 100000, size = n,prob = p))
 
 ### Distribucion geometrica
 
+Sea $X = Geom(p=0.1)$ la distribucion que modela la probabilidad de intentar abrir una puerta hasta conseguirlo. 
+
+Funcion de probabilidad
+
+```{r}
+p = 0.1
+n = 30
+plot(0:n, dgeom(0:n, prob = p))
+```
+
+La funcion de distribucion
+
+```{r}
+plot(0:n, pgeom(0:n, p), ylim = c(0,1))
+```
+
+Cuantas veces tendira que probar el borracho para estar seguros que le queda la mitad:
+
+```{r}
+qgeom(0.5,p)
+```
+
+Para generar datos aleatorios:
+
+```{r}
+hist(rgeom(100000, p))
+```
+
+### Distribucion hipergeometrica
+
+Supongamos que tenemos 20 animales, de los quales 7 son perrros, y 13 son otros. Queremos medir la probabilidad de encontrar un numero determinado de perros si elegimos $x=12$ animales al azar. 
+
+```{r}
+M = 7 
+N = 13
+x = 12
+
+plot(0:12, dhyper(x = 0:12, m = M, n = N, k = x))
+```
+
+Probabilidad que eligiendo 12 animales al azar me salgan 0 perrors, es 0. para 4 es 0.47. 
+
+La funcion de distribucion es:
+
+```{r}
+plot(0:12, phyper(q = 0:12, m = M, n = N, k = x))
+```
+
+La mediana seria:
+
+```{r}
+qhyper(p = 0.5, m = M, n = N, k = x)
+```
+
+Numberos aleatorios con una distribucion hypergeometrica:
+
+```{r}
+temp <- rhyper(nn = 10000, m = M, n = N, k = x)
+hist(temp)
+```
+
+Casi nunca ha salido la opcion de ningun perro, y la probabilidad que salgan 7 tambien es muy bajo.
