@@ -1,0 +1,112 @@
+---
+title: "Notas estadistica descriptiva"
+author: "Joan Claverol Romero"
+date: "28/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Funcion de densidad
+
+$$f(k) = p^k(1-p)^{1-p},\ k\in \{0,1\}$$
+
+Ahora usaremos librierias de R para entender distribuciones:
+
+### Funcion distribucion de Bernoulli
+
+Sea $X = Be(p=0.7)$, sea X una Bernoulli de parametro p = 0.7, la distribucion que modela la probabilidad de obtener una cara usando una moneda trucada. 
+
+```{r}
+# cargamos el paquete
+library(Rlab)
+
+# creamos la distribucion
+dbern(0,prob = 0.7) # probabilidad de sacar un 0
+```
+
+```{r}
+# probabilidad de sacar un 1
+dbern(1, prob = 0.7)
+```
+
+Podemos sacar la funcion de distribucion acumulada
+
+```{r}
+pbern(0, prob = 0.7)
+```
+
+Funcion acumulada en 1:
+
+```{r}
+pbern(1, prob = 0.7)
+```
+
+Podemos ver los cuantiles tambien: 
+
+```{r}
+qbern(0.5, prob = 0.7) # para obtener la mediana
+```
+
+I generacion de numeros aleatorios:
+
+```{r}
+bernoulli_values <- rbern(100, prob = 0.7)
+hist(bernoulli_values)
+```
+
+### Funcion de distribucion Binomial
+
+* Funcion de densidad
+
+$$f(k) = \binom{n}{k}p^k(1-p)^{n-k},\ k\in \{0,1,2,...,n\}$$
+
+Sea $X = B(n = 30, p = 0.6)$, 
+
+* funcion de distribucion
+
+$$(f(X) =
+  \begin{cases}
+    0       & \quad \text{if } x < 0\\
+    \sum_{k=0}^xf(k)  & \quad \text{if } 0 \leq x < n \\
+    1       & \quad \text{if } x \geq n
+  \end{cases}
+)$$
+
+definimos los valores de n i p para ver la funcion de densidad:
+ 
+```{r}
+n <- 30
+p <- 0.6
+dist_binom <- dbinom(
+  x= 0:30, # probabilidad de sacar entre 0 y 30 exitos con una prob binom
+  size = n,
+  prob = p
+  )
+plot(x = 0:n, y = dist_binom)
+```
+
+Ahora la probabilidad de funcion acumulada:
+
+```{r}
+plot(x = 0:n, pbinom(0:n, size = n, prob = p))
+```
+
+Podemos ver los quantiles de 0.5:
+
+```{r}
+qbinom(p = 0.5, size = n, prob = p)
+```
+
+El 50% del experimento esta por debajo del 18 exitos. 
+
+Podemos genrear numeros aleatorios:
+
+```{r}
+hist(rbinom(n = 100000, size = n,prob = p))
+```
+
+### Distribucion geometrica
+
