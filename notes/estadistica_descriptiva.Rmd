@@ -172,3 +172,36 @@ hist(temp)
 ```
 
 Casi nunca ha salido la opcion de ningun perro, y la probabilidad que salgan 7 tambien es muy bajo.
+
+### Distribucion de Poisson
+
+Supongamos que $X$ modela el numero de errores por pagina que tiene un valor esperado de $\lambda = 5$. 
+
+```{r}
+l = 5
+plot(x = 0:20, 
+     y = dpois(x = 0:20, lambda = l) # de ningun error en la pagina hasta 20 errores en la pagina
+     )
+```
+
+Veamos la probabilida de distribucion acumulada:
+
+```{r}
+plot(x = 0:20, 
+     y = ppois(0:20, lambda = l))
+```
+
+El quantil, cual seria la mediana de una poisson?
+
+```{r}
+qpois(0.5, 5)
+```
+
+I una distribucion de una possin:
+
+```{r}
+data <- rpois(1000, lambda = l)
+hist(data)
+```
+
+Veamos que alrededor de 50 paginas no hay ningun error, alrededor de 100 tenia un error, con 200 paginas tenias alrededor de 3 errores y a partir de aqui ya baja. 
