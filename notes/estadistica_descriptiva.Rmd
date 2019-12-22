@@ -205,3 +205,5 @@ hist(data)
 ```
 
 Veamos que alrededor de 50 paginas no hay ningun error, alrededor de 100 tenia un error, con 200 paginas tenias alrededor de 3 errores y a partir de aqui ya baja. 
+
+

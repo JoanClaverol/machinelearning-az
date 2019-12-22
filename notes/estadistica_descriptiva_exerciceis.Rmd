@@ -1,0 +1,211 @@
+---
+title: 'Estadistica descriptiva: ejercicios'
+author: "Joan Claverol Romero"
+date: "04/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Estadistica descriptiva
+
+### Trabajando con R
+
+1. Si hubiéramos empezado a contar segundos a partir de las 12 campanadas que marcan el inicio de 2018, ¿a qué hora de qué día de qué año llegaríamos a los 250 millones de segundos? ¡Cuidado con los años bisiestos!
+
+```{r}
+library(lubridate)
+# definir los segundos a contar
+segundos <- seconds(x = 250 * 1000000)
+# a year contains (seconds) 365.25 days * 24 hours * 60 minutes * 60 seconds 
+# definir la fecha
+date <- ymd_hms("2019-01-01 00:00:00", tz = "Europe/Madrid")
+# operation
+result = date + segundos
+hour(result)
+```
+
+
+2. Cread una función que os resuelva una ecuación de primer grado (de la forma Ax+B=0). Es decir, vosotros tendréis que introducir como parámetros los coeficientes (en orden) y la función os tiene que devolver la solución. Por ejemplo, si la ecuación es 2x+4=0, vuestra función os tendría que devolver -2.
+
+```{r}
+solution <- function(A, B, y) {
+  x = (y-B)/A
+  return(x)
+}
+solution(A = 2, B = 4, y = 0)
+```
+
+
+3. Una vez creada la función, utilizadla para resolver las siguientes ecuaciones de primer grado:
+
+5x+3=0
+
+```{r}
+solution(A = 5, B = 3, y = 0)
+```
+
+7x+4 = 18
+
+```{r}
+solution(A = 7, B = 4, y = 18)
+```
+
+x+1 = 1
+
+```{r}
+solution(A = 1, B = 1, y = 1)
+```
+
+3. Dad una expresión para calcular 3e-π y a continuación, dad el resultado que habéis obtenido con R redondeado a 3 cifras decimales.
+
+```{r}
+round(3*exp(1)*(-pi),3)
+```
+
+Dad el módulo del número complejo (2+3i)^2/(5+8i) redondeado a 3 cifras decimales.
+
+```{r}
+round((2+3i)^2/(5+8i),3)
+```
+
+### Manejo de dataframes en R
+
+```{r}
+library(readr)
+library(tidyr)
+library(dplyr)
+medals <- read_csv("~/Downloads/medals.csv")
+glimpse(medals)
+```
+
+¿Cuantos deportistas aparecen en el data frame?
+
+```{r}
+nrow(unique(medals))
+# 2304
+```
+
+¿Cuantos han ganado medallas de oro, cuantos de plata y cuantos de bronce?
+
+```{r}
+medals %>% 
+  group_by(Medal) %>% 
+  count()
+# Bronze	764			
+# Gold	774			
+# Silver	773
+```
+
+¿En cuantos lugares se han hecho olimpiadas de invierno?
+
+```{r}
+medals %>% 
+  distinct(City) %>% 
+  count()
+# 17
+```
+
+¿Cuantos hombres y cuantas mujeres hay?
+
+```{r}
+medals %>% 
+  group_by(`Event gender`) %>% 
+  count()
+# M	1386			
+# W	802
+```
+
+
+¿En qué año participaron más deportistas?
+
+```{r}
+medals %>% 
+  group_by(Year) %>% 
+  count() %>% 
+  arrange(desc(n))
+# Year: 2006	Deportitstas: 252	
+```
+
+
+El campo NOC indica el país del ganador de la medalla. ¿Qué país puede presumir de haber ganado más medallas de oro en los juegos de invierno entre 1960 y 1996?
+
+```{r}
+medals %>% 
+  filter(between(Year, 1960, 1996), Medal == "Gold") %>% 
+  group_by(NOC) %>% 
+  count() %>% 
+  arrange(desc(n))
+# URS	71
+```
+
+### Estadistica descriptiva con datos cualitativos
+
+Instala y carga el paquete MASS.
+
+En el hay una tabla de datos llamada birthwt sobre factores que pueden incidir en el peso de los niños al nacer.
+
+Preguntas de esta tarea
+Utiliza str() y head() para explorar la estructura, y con help(), mirar el significado de cada variable.
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(magrittr)
+data <- as_tibble(birthwt)
+head(data)
+help("birthwt")
+data %<>% 
+  mutate_at(.vars = vars(-age, -lwt, -ptl, -ftv, -bwt), as.factor)
+glimpse(data)
+```
+
+Calcula una tabla de frecuencias relativas marginales de los pares (raza de la madre, peso inferior a 2.5 kg o no) que permita ver si la raza de la madre influye en el peso del bebé.
+
+```{r}
+data %<>% 
+  mutate(bwt_low = if_else(bwt < 2500, "low","not low"), 
+         race = if_else(race == "1", "white", 
+                        if_else(race == "2", "black", "other")))
+prop.table(table(data$race, data$low), margin = 1)
+```
+
+
+Dibuja un diagrama de mosaico de la tabla del ejercicio anterior.
+
+```{r}
+
+```
+
+Dibuja un diagrama bidimensional de barras, con las barras organizadas en bloques, que permita visualizar la información de los ejercicios anteriores. Aprovecha para nombres adecuados a los bloques, colores a las barras, y añadir una leyenda que explique qué representa cada barra.
+
+```{r}
+
+```
+
+¿Se puede obtener alguna conclusión de la tabla y el diagrama de barras anterior? Argumenta tu respuesta
+
+```{r}
+
+```
+
+Repite los cuatro ejercicios anteriores para los pares (madre fumadora o no, peso inferior a 2.5 kg o no) y para los pares (madre hipertensa o no, peso inferior a 2.5 kg o no.
+
+```{r}
+
+```
+
+Calcula una tabla de frecuencias relativas marginales de las ternas (raza de la madre, madre fumadora o no, peso inferior a 2.5 kg o no) que permita ver si la raza de la madre y su condición de fumadora o no fumadora influyen en el peso del bebé.
+
+```{r}
+
+```
+
+Dibuja un diagrama de mosaico de la tabla del ejercicio anterior.
+
+```{r}
+
+```
+

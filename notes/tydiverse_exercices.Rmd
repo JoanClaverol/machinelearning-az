@@ -1,0 +1,175 @@
+---
+title: "tidyverse_exercices"
+author: "Joan Claverol Romero"
+date: "04/12/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Tidyverse exercices
+
+### Ggplot
+
+```{r}
+library(ggplot2)
+```
+
+
+Repasemos dos aspectos importantes: el uso del parámetro position y de los sistemas de coordenadas de ggplot2.
+
+Preguntas de esta tarea
+
+El siguiente gráfico que genera el código de R es correcto pero puede mejorarse. ¿Qué cosas añadirías para mejorarlo?
+
+```{r}
+ggplot(data = mpg, 
+       mapping = aes(x = cty, y = hwy, col = manufacturer)) + 
+  geom_point() +
+  facet_wrap(class ~ .) + 
+  theme_bw()
+```
+
+
+Investiga la documentación de geom_jitter(). ¿Qué parámetros controlan la cantidad de ruído aleatorio (jitter)?
+
+```{r}
+ggplot(data = mpg, 
+       mapping = aes(x = cty, y = hwy, col = class)) + 
+  geom_point() +
+  geom_jitter(width = 0.8, height = 0.8) +
+  theme_bw()
+```
+
+Compara las funciones geom_jitter contra geom_count y busca semejanzas y diferencias entre ambas.
+
+```{r}
+library(gridExtra)
+# jitter
+p_jitter <- ggplot(data = mpg, 
+       mapping = aes(x = cty, y = hwy, col = class)) + 
+  geom_point() +
+  geom_jitter(width = 0.8, height = 0.8) +
+  theme_bw() +
+  theme(legend.position = "left")
+# count
+p_count <- ggplot(data = mpg, 
+       mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_count() +
+  theme_bw() + 
+  theme(legend.position = "right")
+# grid plots
+grid.arrange(p_jitter, p_count, nrow = 1)
+```
+
+
+¿Cual es el valor por defecto del parámetro position de un geom_boxplot? Usa el dataset de diamonds o de mpg para hacer una visualización que lo demuestre.
+
+```{r}
+ggplot(diamonds, aes(x = cut, y = price)) +
+  geom_boxplot(position = "dodge2")
+```
+
+
+Convierte un diagrama de barras apilado en un diagrama de sectores o de tarta usando la función coord_polar()
+
+```{r}
+ggplot(mpg, aes(x = class, y = hwy)) +
+  geom_col() +
+  coord_polar()
+```
+
+
+¿Qué hace la función labs()? Lee la documentación y explícalo correctamente.
+
+Labs nos permite añadir títulos, subtitilos y otras descriptions al gráfico. Nos permite modificar el texto de todos los títulos del gràfico, ya sean coordenadas o leyendas. 
+
+¿En qué se diferencian las funciones coord_quickmap() y coord_map()?
+
+```{r}
+library(maps)
+nz <- map_data("nz")
+nzmap <- ggplot(nz, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+nzmap
+```
+
+Use coord_quickmap(): 
+
+```{r}
+nzmap + coord_quickmap()
+```
+
+Con coord_map() podemos especificar la orientación del mapa y el tipo de fondo del gráfico. 
+Con coord_quickmap() nos permite  generar rapidamente un mapa pero es menos personalizable. 
+
+With coord_map() you can specify the orientation and the type of map you want to have. 
+
+```{r}
+nzmap + coord_map("azequalarea", orientation = c(-36.92, 174.6, 0))
+```
+
+
+Investiga las coordenadas coord_fixed() e indica su función.
+
+Nos permite fijar las coordenadas de un gráfico, a pesar que los datos dentro de este cambien. 
+
+Investiga la geometría de la función geom_abline(), geom_vline() y geom_hline() e indica su función respectivamente.
+
+geom_abline(), nos permite añadir una recta definiento previamente dos puntos, o solo definiento la intersección y la pendiente. 
+geom_vline() nos permite definir una linea vertical
+geom_hline() nos permite definit una linea horizontal
+
+¿Qué nos indica el gráfico siguiente acerca de la relación entre el consumo en ciudad y en autopista del dataset de mpg?
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy )) + 
+  geom_point() + 
+  geom_abline() + 
+  coord_fixed()
+```
+
+Nos muestra que las dos variables tienen una relación lineal y una correlacion positiva. 
+
+### Dplyr 
+
+#### Ordenado y seleccion de datos
+
+Piensa cómo podrías usar la función arrange() para colocar todos los valores NA al inicio. Pisa: puedes la función is.na() en lugar de la función desc() como argumento de arrange.
+
+```{r}
+library(dplyr)
+data <- ggplot2::msleep
+data %>% 
+  select(sleep_rem) %>% 
+  arrange(desc(is.na(sleep_rem)))
+```
+
+
+
+Ordena los vuelos de flights para encontrar los vuelos más retrasados en la salida. ¿Qué vuelos fueron los que salieron los primeros antes de lo previsto?
+
+Ordena los vuelos de flights para encontrar los vuelos más rápidos. Usa el concepto de rapidez que consideres. 
+
+¿Qué vuelos tienen los trayectos más largos? Busca en Wikipedia qué dos aeropuertos del dataset alojan los vuelos más largos. 
+
+¿Qué vuelos tienen los trayectos más cortos? Busca en Wikipedia qué dos aeropuertos del dataset alojan los vuelos más largos. 
+
+Dale al coco para pensar cuantas más maneras posibles de seleccionar los campos dep_time, dep_delay, arr_time y arr_delay del dataset de flights. 
+
+¿Qué ocurre si pones el nombre de una misma variable varias veces en una select()?
+
+Investiga el uso de la función one_of() de dplyr. 
+
+Investiga cómo puede ser útil la función one_of() de la pregunta anterior en conjunción con el vector de variables 
+
+c("year", "month", "day", "dep_delay", "arr_delay")
+
+Intenta averiguar el resultado del siguiente código. Luego ejecútalo y a ver si el resultado te sorprende.
+
+select(flights, contains("time"))
+
+Intenta averiguar cómo lo hacen las funciones de ayuda de la select para tratar el caso por defecto y cómo lo puedes cambiar.
